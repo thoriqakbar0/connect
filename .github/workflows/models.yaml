@@ -1,0 +1,26 @@
+name: Quint models
+
+on:
+  pull_request:
+    paths:
+      - 'models/**'
+      - '.github/workflows/models.yaml'
+  workflow_dispatch:
+
+jobs:
+  models:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --global @informalsystems/quint@0.31.0
+      - name: Typecheck, test and simulate
+        run: |
+          for model in models/*.qnt; do
+            quint typecheck "$model"
+            quint test "$model" --backend=typescript --seed=42 --max-samples=100
+            quint run "$model" --backend=typescript --invariant=safety --seed=42 --max-samples=10000 --max-steps=50 --verbosity=1
+          done
