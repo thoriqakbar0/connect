@@ -55,8 +55,9 @@ module playback {
       ...unchanged(p), phase: if (Set("loading", "seeking").contains(p.phase)) p.phase else "blocked",
       wantsPlay: false, error: "autoplay"
     } else unchanged(p)
-  action nativePause(epoch: int): bool = p' = if (epoch == p.epoch and active and p.phase == "playing") {
-    ...unchanged(p), phase: "paused", wantsPlay: false, command: p.command + 1
+  action nativePause(epoch: int): bool = p' = if (epoch == p.epoch and active) {
+    ...unchanged(p), wantsPlay: false, command: p.command + 1,
+    phase: if (Set("playing", "waiting", "blocked").contains(p.phase)) "paused" else p.phase
   } else unchanged(p)
   action waiting(epoch: int): bool = p' = if (epoch == p.epoch and p.phase == "playing") {
     ...unchanged(p), phase: "waiting"
@@ -166,6 +167,9 @@ module playback {
   run pauseDuringSeekTest = init.then(selectSource("routeA")).then(metadata(1)).then(play)
     .then(seek(3)).then(pause).then(seeked(1, 2))
     .then(all { assert(p.mediaTime == 2), assert(p.phase == "paused"), assert(not(p.wantsPlay)), assert(safety), p' = p })
+  run nativePauseWhileWaitingTest = init.then(selectSource("routeA")).then(metadata(1)).then(play)
+    .then(playing(1)).then(waiting(1)).then(nativePause(1)).then(playing(1))
+    .then(all { assert(p.phase == "paused"), assert(not(p.wantsPlay)), assert(safety), p' = p })
   // Negative control: a synthetic clock cannot masquerade as a media observation.
   run rejectsSyntheticClockTest = init.then(selectSource("routeA")).then(metadata(1))
     .then(p' = { ...unchanged(p), mediaTime: 1, routeTime: videoStartOffset + 1 })
