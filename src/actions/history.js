@@ -48,7 +48,7 @@ export const onHistoryMiddleware = ({ dispatch, getState }) => (next) => async (
 
     const pathPrimeNav = getPrimeNav(action.payload.location.pathname);
     if (pathPrimeNav !== state.primeNav) {
-      dispatch(primeNav(pathPrimeNav));
+      dispatch(primeNav(pathPrimeNav, false));
     }
 
     const pathStreamNav = getStreamNav(action.payload.location.pathname);
